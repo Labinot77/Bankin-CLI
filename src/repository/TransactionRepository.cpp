@@ -1,0 +1,55 @@
+#include "TransactionRepository.h"
+#include <fstream>
+#include <sstream>
+
+void TransactionRepository::save(const Transaction& tx) {
+    std::ofstream file("data/transactions.txt", std::ios::app);
+
+    file << tx.id << ","
+         << tx.accountId << ","
+         << tx.type << ","
+         << tx.amount << "\n";
+}
+
+std::vector<Transaction> TransactionRepository::getByAccountId(int accountId) {
+    std::vector<Transaction> transactions;
+    std::ifstream file("data/transactions.txt");
+
+    std::string line;
+    while (getline(file, line)) {
+        std::stringstream ss(line);
+
+        std::string idStr, accIdStr, type, amountStr;
+
+        getline(ss, idStr, ',');
+        getline(ss, accIdStr, ',');
+        getline(ss, type, ',');
+        getline(ss, amountStr, ',');
+
+        if (stoi(accIdStr) == accountId) {
+            transactions.emplace_back(
+                stoi(idStr),
+                accountId,
+                type,
+                stod(amountStr)
+            );
+        }
+    }
+
+    return transactions;
+}
+
+int TransactionRepository::generateId() {
+    std::ifstream file("data/transactions.txt");
+    std::string line;
+    int lastId = 0;
+
+    while (getline(file, line)) {
+        std::stringstream ss(line);
+        std::string idStr;
+        getline(ss, idStr, ',');
+        lastId = stoi(idStr);
+    }
+
+    return lastId + 1;
+}
