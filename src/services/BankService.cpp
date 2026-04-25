@@ -11,7 +11,7 @@ void BankService::createAccount(const std::string& name, double initialDeposit) 
     }
 
     int id = repo.generateId();
-    Account acc(id, name, initialDeposit);
+    Account acc(id, name, initialDeposit); // Save the Info in a variable
 
     repo.save(acc);
 
@@ -127,7 +127,7 @@ void BankService::transfer(int fromId, int toId, double amount) {
 }
 
 void BankService::showTransactions(int accountId) {
-    auto transactions = txRepo.getByAccountId(accountId);
+    auto transactions = txRepo.getByAccountId(accountId); // Get all transactions linked to an account
 
     if (transactions.empty()) {
         std::cout << "No transactions found.\n";

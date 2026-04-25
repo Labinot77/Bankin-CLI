@@ -12,6 +12,19 @@ void TransactionRepository::save(const Transaction& tx) {
 }
 
 std::vector<Transaction> TransactionRepository::getByAccountId(int accountId) {
+    std::vector<Transaction> transactions = getAll();
+    std::vector<Transaction> result;
+
+    for (const auto& tx : transactions) {
+        if (tx.accountId == accountId) {
+            result.push_back(tx);
+        }
+    }
+
+    return result;
+}
+
+std::vector<Transaction> TransactionRepository::getAll() {
     std::vector<Transaction> transactions;
     std::ifstream file("data/transactions.txt");
 
@@ -26,30 +39,18 @@ std::vector<Transaction> TransactionRepository::getByAccountId(int accountId) {
         getline(ss, type, ',');
         getline(ss, amountStr, ',');
 
-        if (stoi(accIdStr) == accountId) {
-            transactions.emplace_back(
-                stoi(idStr),
-                accountId,
-                type,
-                stod(amountStr)
-            );
-        }
+        transactions.emplace_back(
+            stoi(idStr),
+            stoi(accIdStr),
+            type,
+            stod(amountStr)
+        );
     }
 
     return transactions;
 }
 
 int TransactionRepository::generateId() {
-    std::ifstream file("data/transactions.txt");
-    std::string line;
-    int lastId = 0;
-
-    while (getline(file, line)) {
-        std::stringstream ss(line);
-        std::string idStr;
-        getline(ss, idStr, ',');
-        lastId = stoi(idStr);
-    }
-
-    return lastId + 1;
+    std::vector<Transaction> transactions = getAll();
+    return transactions.empty() ? 1 : transactions.back().id + 1;
 }

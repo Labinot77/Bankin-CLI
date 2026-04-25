@@ -5,6 +5,7 @@
 class TransactionRepository {
 public:
     void save(const Transaction& tx);
+    std::vector<Transaction> getAll();
     std::vector<Transaction> getByAccountId(int accountId);
     int generateId();
 };
