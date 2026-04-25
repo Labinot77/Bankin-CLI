@@ -2,11 +2,18 @@
 #include <string>
 
 class Transaction {
-public:
+private:
     int id;
     int accountId;
-    std::string type; // "DEPOSIT", "WITHDRAW", "TRANSFER_IN", "TRANSFER_OUT"
+    std::string type;
     double amount;
 
+public:
     Transaction(int id, int accountId, std::string type, double amount);
+
+    // getters
+    int getId() const;
+    int getAccountId() const;
+    std::string getType() const;
+    double getAmount() const;
 };

@@ -19,9 +19,9 @@ std::vector<Account> AccountRepository::getAll() {
         accounts.emplace_back(
             stoi(idStr),
             name,
-            stod(balanceStr)
+            stod(balanceStr),
+            frozenStr == "1"
         );
-        accounts.back().isFrozen = (frozenStr == "1");
     }
 
     return accounts;
@@ -30,21 +30,21 @@ std::vector<Account> AccountRepository::getAll() {
 void AccountRepository::save(const Account& account) {
     std::ofstream file("data/accounts.txt", std::ios::app);
 
-    file << account.id << ","
-         << account.ownerName << ","
-         << account.balance << "\n";
+    file << account.getId() << ","
+         << account.getOwnerName() << ","
+         << account.getBalance() << "\n";
 }
 
 int AccountRepository::generateId() {
     std::vector<Account> accounts = getAll();
-    return accounts.empty() ? 1 : accounts.back().id + 1;
+    return accounts.empty() ? 1 : accounts.back().getId() + 1;
 }
 
 Account AccountRepository::getById(int id) {
     std::vector<Account> accounts = getAll();
 
     for (auto& acc : accounts) {
-        if (acc.id == id) {
+        if (acc.getId() == id) {
             return acc;
         }
     }
@@ -56,9 +56,9 @@ void AccountRepository::updateAll(const std::vector<Account>& accounts) {
     std::ofstream file("data/accounts.txt"); // overwrite
 
     for (const auto& acc : accounts) {
-        file << acc.id << ","
-             << acc.ownerName << ","
-             << acc.balance << ","
-             << acc.isFrozen << "\n";
+        file << acc.getId() << ","
+             << acc.getOwnerName() << ","
+             << acc.getBalance() << ","
+             << acc.getIsFronze() << "\n";
     }
 }

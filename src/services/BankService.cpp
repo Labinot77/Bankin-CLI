@@ -11,7 +11,7 @@ void BankService::createAccount(const std::string& name, double initialDeposit) 
     }
 
     int id = repo.generateId();
-    Account acc(id, name, initialDeposit); // Save the Info in a variable
+    Account acc(id, name, initialDeposit, false); // Save the Info in a variable
 
     repo.save(acc);
 
@@ -28,9 +28,10 @@ void BankService::deposit(int accountId, double amount) {
     std::vector<Account> accounts = repo.getAll();
 
     for (auto& acc : accounts) {
-        if (!acc.isFrozen) {
-            if (acc.id == accountId) {
-                acc.balance += amount;
+        if (!acc.getIsFronze()) {
+            if (acc.getId() == accountId) {
+                // acc.balance += amount;
+                acc.deposit(amount); 
     
                 int txId = txRepo.generateId();
                 Transaction tx(txId, accountId, "DEPOSIT", amount);
@@ -58,20 +59,12 @@ void BankService::withdraw(int accountId, double amount) {
     std::vector<Account> accounts = repo.getAll();
 
     for (auto& acc : accounts) {
-        if (acc.id == accountId) {
-            if (!acc.isFrozen) {
-                if (acc.balance < amount) {
-                    std::cout << "Insufficient funds.\n";
-                    return;
-                };
-            } else {
-                std::cout << "Account is frozen. \n";
+        if (acc.getId() == accountId) {
+            if (!acc.withdraw(amount)) {
+                std::cout << "Withdraw failed.\n";
                 return;
             }
-            
-            
-            acc.balance -= amount;
-
+        
             int txId = txRepo.generateId();
             Transaction tx(txId, accountId, "WITHDRAW", amount);
             txRepo.save(tx);
@@ -103,8 +96,8 @@ void BankService::transfer(int fromId, int toId, double amount) {
     Account* toAcc = nullptr;
 
     for (auto& acc : accounts) {
-        if (acc.id == fromId) fromAcc = &acc;
-        if (acc.id == toId) toAcc = &acc;
+        if (acc.getId() == fromId) fromAcc = &acc;
+        if (acc.getId() == toId) toAcc = &acc;
     }
 
     if (!fromAcc || !toAcc) {
@@ -112,18 +105,17 @@ void BankService::transfer(int fromId, int toId, double amount) {
         return;
     }
 
-    if (!fromAcc->isFrozen || !toAcc->isFrozen) {
+    if (fromAcc->getIsFronze() || toAcc->getIsFronze()) {
         std::cout << "One of the accounts is frozen. \n";
         return;
     }
 
-    if (fromAcc->balance < amount) {
+    if (!fromAcc->withdraw(amount)) {
         std::cout << "Insufficient funds.\n";
         return;
     }
 
-    fromAcc->balance -= amount;
-    toAcc->balance += amount;
+    toAcc->deposit(amount);
 
 
     int txId1 = txRepo.generateId();
@@ -140,22 +132,15 @@ void BankService::transfer(int fromId, int toId, double amount) {
 }
 
 void BankService::showTransactions(int accountId) {
-    auto transactions = txRepo.getByAccountId(accountId); // Get all transactions linked to an account
-
-    if (transactions.empty()) {
-        std::cout << "No transactions found.\n";
-        return;
-    }
+    auto transactions = txRepo.getByAccountId(accountId);
 
     for (const auto& tx : transactions) {
-        std::cout << "ID: " << tx.id
-                  << " | Type: " << tx.type
-                  << " | Amount: " << tx.amount << "\n";
+        std::cout << "ID: " << tx.getId()
+                  << " | Type: " << tx.getType()
+                  << " | Amount: " << tx.getAmount()
+                  << "\n";
     }
 }
-
-
-
 
 // Debug
 
@@ -170,25 +155,22 @@ void BankService::showAllAccounts() {
     std::cout << "All accounts.\n";
 
     for (const auto& acc : accounts) {
-        std::cout << "ID: " << acc.id
-                  << " | Owner: " << acc.ownerName << "\n"
-                  << " | Balance: " << acc.balance << "\n";
+        std::cout << "ID: " << acc.getId()
+                  << " | Owner: " << acc.getOwnerName() << "\n"
+                  << " | Balance: " << acc.getBalance() << "\n"
+                  << " | Frozen: " << (acc.getIsFronze() ? "True" : "False");
     }
 }
 
 // Admin
 
 void BankService::freezeAccount(int accountId) {
-    if (!accountId) {
-        std::cout << "Account doesnt exist. \n";
-        return;
-    }
     // Pull all the account because after that we will update them
     std::vector<Account> accounts = repo.getAll();
 
     for (auto& acc : accounts) {
-        if (acc.id == accountId) {
-            acc.isFrozen = true;
+        if (acc.getId() == accountId) {
+            acc.setFrozen(true);
             repo.updateAll(accounts);
             std::cout << "Account is frozen. \n";
             return;
@@ -199,16 +181,12 @@ void BankService::freezeAccount(int accountId) {
 }
 
 void BankService::unfreezeAccount(int accountId) {
-    if (!accountId) {
-        std::cout << "Account doesnt exist. \n";
-        return;
-    }
     // Pull all the account because after that we will update them
     std::vector<Account> accounts = repo.getAll();
 
     for (auto& acc : accounts) {
-        if (acc.id == accountId) {
-            acc.isFrozen = false;
+        if (acc.getId() == accountId) {
+            acc.setFrozen(false);
             repo.updateAll(accounts);
             std::cout << "Account is not frozen anymore. \n";
             return;
@@ -216,5 +194,4 @@ void BankService::unfreezeAccount(int accountId) {
     }
 
      std::cout << "Account not found.\n";
-
 }

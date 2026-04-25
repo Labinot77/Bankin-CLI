@@ -5,10 +5,10 @@
 void TransactionRepository::save(const Transaction& tx) {
     std::ofstream file("data/transactions.txt", std::ios::app);
 
-    file << tx.id << ","
-         << tx.accountId << ","
-         << tx.type << ","
-         << tx.amount << "\n";
+    file << tx.getId() << ","
+         << tx.getAccountId() << ","
+         << tx.getType() << ","
+         << tx.getAmount() << "\n";
 }
 
 std::vector<Transaction> TransactionRepository::getByAccountId(int accountId) {
@@ -16,7 +16,7 @@ std::vector<Transaction> TransactionRepository::getByAccountId(int accountId) {
     std::vector<Transaction> result;
 
     for (const auto& tx : transactions) {
-        if (tx.accountId == accountId) {
+        if (tx.getAccountId() == accountId) {
             result.push_back(tx);
         }
     }
@@ -52,5 +52,5 @@ std::vector<Transaction> TransactionRepository::getAll() {
 
 int TransactionRepository::generateId() {
     std::vector<Transaction> transactions = getAll();
-    return transactions.empty() ? 1 : transactions.back().id + 1;
+    return transactions.empty() ? 1 : transactions.back().getId() + 1;
 }
