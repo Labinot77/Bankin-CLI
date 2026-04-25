@@ -17,4 +17,8 @@ public:
 
     // Debug
     void showAllAccounts();
+
+    // Admin;
+  void freezeAccount(int accountId);
+  void unfreezeAccount(int accountId);
 };

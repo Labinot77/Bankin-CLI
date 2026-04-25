@@ -28,15 +28,20 @@ void BankService::deposit(int accountId, double amount) {
     std::vector<Account> accounts = repo.getAll();
 
     for (auto& acc : accounts) {
-        if (acc.id == accountId) {
-            acc.balance += amount;
-
-            int txId = txRepo.generateId();
-            Transaction tx(txId, accountId, "DEPOSIT", amount);
-            txRepo.save(tx);
-            
-            repo.updateAll(accounts);
-            std::cout << "Deposit successful!\n";
+        if (!acc.isFrozen) {
+            if (acc.id == accountId) {
+                acc.balance += amount;
+    
+                int txId = txRepo.generateId();
+                Transaction tx(txId, accountId, "DEPOSIT", amount);
+                txRepo.save(tx);
+                
+                repo.updateAll(accounts);
+                std::cout << "Deposit successful!\n";
+                return;
+            };
+        } else {
+            std::cout << "Account is frozen. \n";
             return;
         }
     }
@@ -54,10 +59,16 @@ void BankService::withdraw(int accountId, double amount) {
 
     for (auto& acc : accounts) {
         if (acc.id == accountId) {
-            if (acc.balance < amount) {
-                std::cout << "Insufficient funds.\n";
+            if (!acc.isFrozen) {
+                if (acc.balance < amount) {
+                    std::cout << "Insufficient funds.\n";
+                    return;
+                };
+            } else {
+                std::cout << "Account is frozen. \n";
                 return;
-            };
+            }
+            
             
             acc.balance -= amount;
 
@@ -91,7 +102,6 @@ void BankService::transfer(int fromId, int toId, double amount) {
     Account* fromAcc = nullptr;
     Account* toAcc = nullptr;
 
-    // 🔍 Find both accounts
     for (auto& acc : accounts) {
         if (acc.id == fromId) fromAcc = &acc;
         if (acc.id == toId) toAcc = &acc;
@@ -102,17 +112,20 @@ void BankService::transfer(int fromId, int toId, double amount) {
         return;
     }
 
-    // 💰 Check balance
+    if (!fromAcc->isFrozen || !toAcc->isFrozen) {
+        std::cout << "One of the accounts is frozen. \n";
+        return;
+    }
+
     if (fromAcc->balance < amount) {
         std::cout << "Insufficient funds.\n";
         return;
     }
 
-    // 🔄 Apply transfer
     fromAcc->balance -= amount;
     toAcc->balance += amount;
 
-    // 🔥 LOG BOTH TRANSACTIONS
+
     int txId1 = txRepo.generateId();
     Transaction outTx(txId1, fromId, "TRANSFER_OUT", amount);
     txRepo.save(outTx);
@@ -158,7 +171,50 @@ void BankService::showAllAccounts() {
 
     for (const auto& acc : accounts) {
         std::cout << "ID: " << acc.id
-                  << " | Owner: " << acc.ownerName << "\n";
-                //   << " | Balance: " << acc.balance << "\n";
+                  << " | Owner: " << acc.ownerName << "\n"
+                  << " | Balance: " << acc.balance << "\n";
     }
+}
+
+// Admin
+
+void BankService::freezeAccount(int accountId) {
+    if (!accountId) {
+        std::cout << "Account doesnt exist. \n";
+        return;
+    }
+    // Pull all the account because after that we will update them
+    std::vector<Account> accounts = repo.getAll();
+
+    for (auto& acc : accounts) {
+        if (acc.id == accountId) {
+            acc.isFrozen = true;
+            repo.updateAll(accounts);
+            std::cout << "Account is frozen. \n";
+            return;
+        }
+    }
+
+     std::cout << "Account not found.\n";
+}
+
+void BankService::unfreezeAccount(int accountId) {
+    if (!accountId) {
+        std::cout << "Account doesnt exist. \n";
+        return;
+    }
+    // Pull all the account because after that we will update them
+    std::vector<Account> accounts = repo.getAll();
+
+    for (auto& acc : accounts) {
+        if (acc.id == accountId) {
+            acc.isFrozen = false;
+            repo.updateAll(accounts);
+            std::cout << "Account is not frozen anymore. \n";
+            return;
+        }
+    }
+
+     std::cout << "Account not found.\n";
+
 }

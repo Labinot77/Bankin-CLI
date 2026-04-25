@@ -1,6 +1,7 @@
 #include "Menu.h"
 #include "../services/BankService.h"
 #include <iostream>
+#include "../services/AdminService.h"
 
 void Menu::show()
 {
@@ -17,6 +18,7 @@ void Menu::show()
         std::cout << "4. View Transactions\n";
         std::cout << "5. Transfer\n";
         std::cout << "6. View All Accounts\n";
+        std::cout << "7. Admin Login\n";
         std::cout << "0. Exit\n";
         std::cout << "Choice: ";
         std::cin >> choice;
@@ -99,7 +101,56 @@ void Menu::show()
         case 6:
             bankService.showAllAccounts();
             break;
+        case 7:{    
+    AdminService adminService;
+    std::string password;
 
+    std::cout << "Enter admin password: ";
+    std::cin >> password;
+
+    if (!adminService.login(password)) {
+        std::cout << "Wrong password.\n";
+        break;
+    }
+
+    int adminChoice;
+
+    while (true)
+    {
+        std::cout << "\n--- ADMIN MENU ---\n";
+        std::cout << "1. Freeze Account\n";
+        std::cout << "2. Unfreeze Account\n";
+        std::cout << "0. Back\n";
+        std::cout << "Choice: ";
+        std::cin >> adminChoice;
+
+        if (adminChoice == 1)
+        {
+            int id;
+            std::cout << "Account ID: ";
+            std::cin >> id;
+
+            bankService.freezeAccount(id);
+        }
+        else if (adminChoice == 2)
+        {
+            int id;
+            std::cout << "Account ID: ";
+            std::cin >> id;
+
+            bankService.unfreezeAccount(id);
+        }
+        else if (adminChoice == 0)
+        {
+            break; // exit admin menu
+        }
+        else
+        {
+            std::cout << "Invalid choice.\n";
+        }
+    }
+    break;
+}
         case 0:
             return; // cleaner than break (exits function directly)
 

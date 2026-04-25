@@ -9,17 +9,19 @@ std::vector<Account> AccountRepository::getAll() {
     std::string line;
     while (getline(file, line)) {
         std::stringstream ss(line);
-        std::string idStr, name, balanceStr;
+        std::string idStr, name, balanceStr, frozenStr;
 
         getline(ss, idStr, ',');
         getline(ss, name, ',');
         getline(ss, balanceStr, ',');
+        getline(ss, frozenStr, ',');
 
         accounts.emplace_back(
             stoi(idStr),
             name,
             stod(balanceStr)
         );
+        accounts.back().isFrozen = (frozenStr == "1");
     }
 
     return accounts;
@@ -56,6 +58,7 @@ void AccountRepository::updateAll(const std::vector<Account>& accounts) {
     for (const auto& acc : accounts) {
         file << acc.id << ","
              << acc.ownerName << ","
-             << acc.balance << "\n";
+             << acc.balance << ","
+             << acc.isFrozen << "\n";
     }
 }
