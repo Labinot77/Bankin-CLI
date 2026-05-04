@@ -3,5 +3,5 @@
 
 class AdminService {
 public:
-    bool login(std::string password);
+    bool login(std::string& password);
 };

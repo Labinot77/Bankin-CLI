@@ -1,161 +1,194 @@
 #include "Menu.h"
 #include "../services/BankService.h"
+#include "../services/AuthService.h"
 #include <iostream>
-#include "../services/AdminService.h"
 
 void Menu::show()
 {
-    BankService bankService;
+
+    User* currentUser = nullptr;
 
     int choice;
 
     while (true)
     {
-        std::cout << "\n--- BANK MENU ---\n";
-        std::cout << "1. Open Account\n";
-        std::cout << "2. Deposit\n";
-        std::cout << "3. Withdraw\n";
-        std::cout << "4. View Transactions\n";
-        std::cout << "5. Transfer\n";
-        std::cout << "6. View All Accounts\n";
-        std::cout << "7. Admin Login\n";
-        std::cout << "0. Exit\n";
-        std::cout << "Choice: ";
-        std::cin >> choice;
-
-        switch (choice)
+        // 🔐 NOT LOGGED IN MENU
+        if (!currentUser)
         {
-        case 1:
-        {
-            std::string name;
-            double deposit;
+            std::cout << "\n--- MAIN MENU ---\n";
+            std::cout << "1. Register\n";
+            std::cout << "2. Login\n";
+            std::cout << "0. Exit\n";
+            std::cout << "Choice: ";
+            std::cin >> choice;
 
-            std::cout << "Enter name: ";
-            std::cin >> name;
+            if (choice == 1)
+            {
+                std::string username, password;
 
-            std::cout << "Initial deposit: ";
-            std::cin >> deposit;
+                std::cout << "Username: ";
+                std::cin >> username;
 
-            bankService.createAccount(name, deposit);
-            break;
+                std::cout << "Password: ";
+                std::cin >> password;
+
+                authService.registerUser(username, password);
+            }
+            else if (choice == 2)
+            {
+                std::string username, password;
+
+                std::cout << "Username: ";
+                std::cin >> username;
+
+                std::cout << "Password: ";
+                std::cin >> password;
+
+                currentUser = authService.login(username, password);
+
+                if (!currentUser)
+                {
+                    std::cout << "Invalid credentials.\n";
+                }
+                else
+                {
+                    std::cout << "Welcome, " << currentUser->getUsername() << "!\n";
+                }
+            }
+            else if (choice == 0)
+            {
+                return;
+            }
+            else
+            {
+                std::cout << "Invalid choice.\n";
+            }
         }
 
-        case 2:
+        // 👤 LOGGED-IN USER MENU
+        else
         {
-            int id;
-            double amount;
+            std::cout << "\n--- USER MENU ---\n";
+            std::cout << "1. Create Account\n";
+            std::cout << "2. Deposit\n";
+            std::cout << "3. Withdraw\n";
+            std::cout << "4. Transfer\n";
+            std::cout << "5. View My Accounts\n";
+            std::cout << "6. View Transactions\n";
+            std::cout << "7. Logout\n";
+            std::cout << "Choice: ";
+            std::cin >> choice;
 
-            std::cout << "Enter account ID: ";
-            std::cin >> id;
+            switch (choice)
+            {
+            case 1:
+            {
+                std::string name;
+                double deposit;
 
-            std::cout << "Enter amount: ";
-            std::cin >> amount;
+                std::cout << "Account name: ";
+                std::cin >> name;
 
-            bankService.deposit(id, amount);
-            break;
-        }
+                std::cout << "Initial deposit: ";
+                std::cin >> deposit;
 
-        case 3:
-        {
-            int id;
-            double amount;
+                bankService.createAccount(currentUser->getId(), name, deposit);
+                break;
+            }
 
-            std::cout << "Enter account ID: ";
-            std::cin >> id;
+case 2:
+{
+    auto accounts = bankService.getAccountsByUser(currentUser->getId());
 
-            std::cout << "Enter amount: ";
-            std::cin >> amount;
-
-            bankService.withdraw(id, amount);
-            break;
-        }
-
-        case 4:
-        {
-            int id;
-            std::cout << "Enter account ID: ";
-            std::cin >> id;
-
-            bankService.showTransactions(id);
-            break;
-        }
-
-        case 5:
-        {
-            int fromId, toId;
-            double amount;
-
-            std::cout << "From account ID: ";
-            std::cin >> fromId;
-
-            std::cout << "To account ID: ";
-            std::cin >> toId;
-
-            std::cout << "Amount: ";
-            std::cin >> amount;
-
-            bankService.transfer(fromId, toId, amount);
-            break;
-        }
-
-        case 6:
-            bankService.showAllAccounts();
-            break;
-        case 7:{    
-    AdminService adminService;
-    std::string password;
-
-    std::cout << "Enter admin password: ";
-    std::cin >> password;
-
-    if (!adminService.login(password)) {
-        std::cout << "Wrong password.\n";
+    if (accounts.empty()) {
+        std::cout << "No accounts found.\n";
         break;
     }
 
-    int adminChoice;
+    std::cout << "\n--- Your Accounts ---\n";
 
-    while (true)
-    {
-        std::cout << "\n--- ADMIN MENU ---\n";
-        std::cout << "1. Freeze Account\n";
-        std::cout << "2. Unfreeze Account\n";
-        std::cout << "0. Back\n";
-        std::cout << "Choice: ";
-        std::cin >> adminChoice;
-
-        if (adminChoice == 1)
-        {
-            int id;
-            std::cout << "Account ID: ";
-            std::cin >> id;
-
-            bankService.freezeAccount(id);
-        }
-        else if (adminChoice == 2)
-        {
-            int id;
-            std::cout << "Account ID: ";
-            std::cin >> id;
-
-            bankService.unfreezeAccount(id);
-        }
-        else if (adminChoice == 0)
-        {
-            break; // exit admin menu
-        }
-        else
-        {
-            std::cout << "Invalid choice.\n";
-        }
+    for (size_t i = 0; i < accounts.size(); i++) {
+        std::cout << i + 1 << ". "
+                  << accounts[i].getOwnerName()
+                  << " | Balance: " << accounts[i].getBalance()
+                  << "\n";
     }
+
+    int choice;
+    std::cout << "Choose account: ";
+    std::cin >> choice;
+
+    if (choice < 1 || choice > accounts.size()) {
+        std::cout << "Invalid choice.\n";
+        break;
+    }
+
+    int selectedId = accounts[choice - 1].getId();
+
+    double amount;
+    std::cout << "Amount: ";
+    std::cin >> amount;
+
+    bankService.deposit(selectedId, amount);
+
     break;
 }
-        case 0:
-            return; // cleaner than break (exits function directly)
 
-        default:
-            std::cout << "Invalid choice.\n";
+            case 3:
+            {
+                int id;
+                double amount;
+
+                std::cout << "Account ID: ";
+                std::cin >> id;
+
+                std::cout << "Amount: ";
+                std::cin >> amount;
+
+                bankService.withdraw(id, amount);
+                break;
+            }
+
+            case 4:
+            {
+                int fromId, toId;
+                double amount;
+
+                std::cout << "From Account ID: ";
+                std::cin >> fromId;
+
+                std::cout << "To Account ID: ";
+                std::cin >> toId;
+
+                std::cout << "Amount: ";
+                std::cin >> amount;
+
+                bankService.transfer(fromId, toId, amount);
+                break;
+            }
+
+            case 5:
+                // bankService.showAccountsByUser(currentUser->getId());
+                break;
+
+            case 6:
+            {
+                int id;
+                std::cout << "Account ID: ";
+                std::cin >> id;
+
+                bankService.showTransactions(id);
+                break;
+            }
+
+            case 7:
+                currentUser = nullptr;
+                std::cout << "Logged out.\n";
+                break;
+
+            default:
+                std::cout << "Invalid choice.\n";
+            }
         }
     }
 }

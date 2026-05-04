@@ -1,8 +1,9 @@
 #include "Account.h"
 
-Account::Account(int id, std::string ownerName, double balance, bool isFrozen)
+Account::Account(int id, int userId, std::string ownerName, double balance, bool isFrozen)
 {
     this->id = id;
+    this->userId = userId;
     this->ownerName = ownerName;
     this->balance = balance;
     this->isFrozen = isFrozen;
@@ -11,6 +12,10 @@ Account::Account(int id, std::string ownerName, double balance, bool isFrozen)
 int Account::getId() const
 {
     return id;
+}
+
+int Account::getUserId() const {
+    return userId;
 }
 
 std::string Account::getOwnerName() const

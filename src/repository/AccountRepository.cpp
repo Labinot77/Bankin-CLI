@@ -9,15 +9,17 @@ std::vector<Account> AccountRepository::getAll() {
     std::string line;
     while (getline(file, line)) {
         std::stringstream ss(line);
-        std::string idStr, name, balanceStr, frozenStr;
+        std::string idStr, userIdStr, name, balanceStr, frozenStr;
 
         getline(ss, idStr, ',');
+        getline(ss, userIdStr, ',');
         getline(ss, name, ',');
         getline(ss, balanceStr, ',');
         getline(ss, frozenStr, ',');
 
         accounts.emplace_back(
             stoi(idStr),
+            stoi(userIdStr),
             name,
             stod(balanceStr),
             frozenStr == "1"
@@ -31,6 +33,7 @@ void AccountRepository::save(const Account& account) {
     std::ofstream file("data/accounts.txt", std::ios::app);
 
     file << account.getId() << ","
+         << account.getUserId() << ','
          << account.getOwnerName() << ","
          << account.getBalance() << "\n";
 }
@@ -56,9 +59,10 @@ void AccountRepository::updateAll(const std::vector<Account>& accounts) {
     std::ofstream file("data/accounts.txt"); // overwrite
 
     for (const auto& acc : accounts) {
-        file << acc.getId() << ","
-             << acc.getOwnerName() << ","
-             << acc.getBalance() << ","
-             << acc.getIsFronze() << "\n";
+    file << acc.getId() << ","
+     << acc.getUserId() << ","
+     << acc.getOwnerName() << ","
+     << acc.getBalance() << ","
+     << acc.getIsFronze() << "\n";
     }
 }

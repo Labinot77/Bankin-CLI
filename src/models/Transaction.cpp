@@ -1,10 +1,11 @@
 #include "Transaction.h"
 
-Transaction::Transaction(int id, int accountId, std::string type, double amount) {
+Transaction::Transaction(int id, int accountId, std::string type, double amount, std::string timestamp) {
     this->id = id;
     this->accountId = accountId;
     this->type = type;
     this->amount = amount;
+    this->timestamp = timestamp;
 }
 
 int Transaction::getId() const {
@@ -21,4 +22,8 @@ std::string Transaction::getType() const {
 
 double Transaction::getAmount() const {
     return amount;
+}
+
+std::string Transaction::getTime() const {
+    return timestamp;
 }

@@ -8,7 +8,8 @@ void TransactionRepository::save(const Transaction& tx) {
     file << tx.getId() << ","
          << tx.getAccountId() << ","
          << tx.getType() << ","
-         << tx.getAmount() << "\n";
+         << tx.getAmount() << ","
+         << tx.getTime() << "\n";
 }
 
 std::vector<Transaction> TransactionRepository::getByAccountId(int accountId) {
@@ -32,18 +33,20 @@ std::vector<Transaction> TransactionRepository::getAll() {
     while (getline(file, line)) {
         std::stringstream ss(line);
 
-        std::string idStr, accIdStr, type, amountStr;
+        std::string idStr, accIdStr, type, amountStr, timestamp;
 
         getline(ss, idStr, ',');
         getline(ss, accIdStr, ',');
         getline(ss, type, ',');
         getline(ss, amountStr, ',');
+        getline(ss, timestamp, ',');
 
         transactions.emplace_back(
             stoi(idStr),
             stoi(accIdStr),
             type,
-            stod(amountStr)
+            stod(amountStr),
+            timestamp
         );
     }
 
