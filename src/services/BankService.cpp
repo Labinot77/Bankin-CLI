@@ -23,6 +23,7 @@ std::string getCurrentTimestamp() {
     return ss.str();
 }
 
+
 void BankService::createAccount(int userId, const std::string& name, double initialDeposit)
 {
     if (initialDeposit < 0)
@@ -31,13 +32,11 @@ void BankService::createAccount(int userId, const std::string& name, double init
         return;
     }
 
-    int id = repo.generateId();
-    Account acc(id, userId, name, initialDeposit, false); // Save the Info in a variable
+    Account acc(0, userId, name, initialDeposit, false); // Save the Info in a variable
 
     repo.save(acc);
 
     std::cout << "Account created successfully!\n";
-    std::cout << "Account ID: " << id << "\n";
 }
 
 std::vector<Account> BankService::getAccountsByUser(int userId) {
@@ -55,74 +54,55 @@ std::vector<Account> BankService::getAccountsByUser(int userId) {
 
 void BankService::deposit(int accountId, double amount)
 {
-    if (amount <= 0)
+    try {
+ if (amount <= 0)
     {
         std::cout << "Invalid amount.\n";
         return;
     }
 
-    std::vector<Account> accounts = repo.getAll();
+    Account acc = repo.getById(accountId);
 
-    for (auto &acc : accounts)
-    {
-        if (!acc.getIsFronze())
-        {
-            if (acc.getId() == accountId)
-            {
-                // acc.balance += amount;
-                acc.deposit(amount);
+    if (acc.getIsFronze()) {
+        std::cout << "Account is fronze." << std::endl;
+        return;
+    };
 
-                int txId = txRepo.generateId();
-                Transaction tx(txId, accountId, "DEPOSIT", amount, getCurrentTimestamp());
-                txRepo.save(tx);
+    acc.deposit(amount);
 
-                repo.updateAll(accounts);
-                std::cout << "Deposit successful!\n";
-                return;
-            };
-        }
-        else
-        {
-            std::cout << "Account is frozen. \n";
-            return;
-        }
+    std::string time = getCurrentTimestamp();
+    Transaction Txin(0, accountId, "DEPOSIT", amount, time);
+    txRepo.save(Txin);
+
+    } catch (std::exception& e) {
+        std::cout << e.what() << std::endl;
     }
-
-    std::cout << "Account not found.\n";
 }
 
 void BankService::withdraw(int accountId, double amount)
 {
-    if (amount <= 0)
+    try {
+            if (amount <= 0)
     {
         std::cout << "Invalid Amount" << std::endl;
         return;
     }
 
-    std::vector<Account> accounts = repo.getAll();
+        Account acc = repo.getById(accountId);
 
-    for (auto &acc : accounts)
-    {
-        if (acc.getId() == accountId)
-        {
-            if (!acc.withdraw(amount))
-            {
-                std::cout << "Withdraw failed.\n";
-                return;
-            }
-
-            int txId = txRepo.generateId();
-            Transaction tx(txId, accountId, "WITHDRAW", amount, getCurrentTimestamp());
-            txRepo.save(tx);
-
-            repo.updateAll(accounts);
-
-            std::cout << "Deposit successful!";
+        if (!acc.withdraw(amount)) {
+             std::cout << "Withdraw failed.\n";
             return;
-        }
-    }
+        };
 
-    std::cout << "Account not found.\n";
+        acc.withdraw(amount);
+
+        std::cout << "Deposit successful!";
+        return;
+        
+    } catch (std::exception& e) {
+        std::cout << "Error: " << e.what() << "\n";
+    };
 };
 
 void BankService::transfer(int fromId, int toId, double amount)
@@ -139,50 +119,36 @@ void BankService::transfer(int fromId, int toId, double amount)
         return;
     }
 
-    auto accounts = repo.getAll();
+    try {
+    Account fromAcc = repo.getById(fromId);
+    Account toAcc = repo.getById(toId);
 
-    Account *fromAcc = nullptr;
-    Account *toAcc = nullptr;
 
-    for (auto &acc : accounts)
-    {
-        if (acc.getId() == fromId)
-            fromAcc = &acc;
-        if (acc.getId() == toId)
-            toAcc = &acc;
-    }
-
-    if (!fromAcc || !toAcc)
-    {
-        std::cout << "One or both accounts not found.\n";
-        return;
-    }
-
-    if (fromAcc->getIsFronze() || toAcc->getIsFronze())
+    if (fromAcc.getIsFronze() || toAcc.getIsFronze())
     {
         std::cout << "One of the accounts is frozen. \n";
         return;
     }
 
-    if (!fromAcc->withdraw(amount))
+    if (!fromAcc.withdraw(amount))
     {
         std::cout << "Insufficient funds.\n";
         return;
     }
 
-    toAcc->deposit(amount);
+    toAcc.deposit(amount);
 
-    int txId1 = txRepo.generateId();
-    Transaction outTx(txId1, fromId, "TRANSFER_OUT", amount, getCurrentTimestamp());
+    std::string time = getCurrentTimestamp();
+    Transaction outTx(0, fromId, "TRANSFER_OUT", amount, time);
     txRepo.save(outTx);
 
-    int txId2 = txRepo.generateId();
-    Transaction inTx(txId2, toId, "TRANSFER_IN", amount, getCurrentTimestamp());
+    Transaction inTx(0, toId, "TRANSFER_IN", amount, time);
     txRepo.save(inTx);
 
-    repo.updateAll(accounts);
-
     std::cout << "Transfer successful!\n";
+    } catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << "\n";
+    }
 }
 
 void BankService::showTransactions(int accountId)
@@ -223,64 +189,64 @@ void BankService::showAllAccounts()
 
 // Admin
 
-void BankService::freezeAccount(int accountId) {
-    auto accounts = repo.getAll();
+// void BankService::freezeAccount(int accountId) {
+//     auto accounts = repo.getAll();
 
-    for (auto& acc : accounts) {
-        if (acc.getId() == accountId) {
+//     for (auto& acc : accounts) {
+//         if (acc.getId() == accountId) {
 
-            if (acc.getIsFronze()) {
-                std::cout << "Already frozen.\n";
-                return;
-            }
+//             if (acc.getIsFronze()) {
+//                 std::cout << "Already frozen.\n";
+//                 return;
+//             }
 
-            acc.setFrozen(true);
-            repo.updateAll(accounts);
+//             acc.setFrozen(true);
+//             repo.updateAll(accounts);
 
-            int logId = auditRepo.generateId();
-            AuditLog log(
-                logId,
-                "FROZE account " + std::to_string(accountId),
-                getCurrentTimestamp()
-            );
+//             int logId = auditRepo.generateId();
+//             AuditLog log(
+//                 logId,
+//                 "FROZE account " + std::to_string(accountId),
+//                 getCurrentTimestamp()
+//             );
 
-            auditRepo.save(log);
+//             auditRepo.save(log);
 
-            std::cout << "Account frozen.\n";
-            return;
-        }
-    }
+//             std::cout << "Account frozen.\n";
+//             return;
+//         }
+//     }
 
-    std::cout << "Account not found.\n";
-}
+//     std::cout << "Account not found.\n";
+// }
 
-void BankService::unfreezeAccount(int accountId) {
-    auto accounts = repo.getAll();
+// void BankService::unfreezeAccount(int accountId) {
+//     auto accounts = repo.getAll();
 
-    for (auto& acc : accounts) {
-        if (acc.getId() == accountId) {
+//     for (auto& acc : accounts) {
+//         if (acc.getId() == accountId) {
 
-            if (!acc.getIsFronze()) {
-                std::cout << "Already active.\n";
-                return;
-            }
+//             if (!acc.getIsFronze()) {
+//                 std::cout << "Already active.\n";
+//                 return;
+//             }
 
-            acc.setFrozen(false);
-            repo.updateAll(accounts);
+//             acc.setFrozen(false);
+//             repo.updateAll(accounts);
 
-            int logId = auditRepo.generateId();
-            AuditLog log(
-                logId,
-                "UNFROZE account " + std::to_string(accountId),
-                getCurrentTimestamp()
-            );
+//             int logId = auditRepo.generateId();
+//             AuditLog log(
+//                 logId,
+//                 "UNFROZE account " + std::to_string(accountId),
+//                 getCurrentTimestamp()
+//             );
 
-            auditRepo.save(log);
+//             auditRepo.save(log);
 
-            std::cout << "Account unfrozen.\n";
-            return;
-        }
-    }
+//             std::cout << "Account unfrozen.\n";
+//             return;
+//         }
+//     }
 
-    std::cout << "Account not found.\n";
-}
+//     std::cout << "Account not found.\n";
+// }

@@ -1,12 +1,12 @@
 #pragma once
 #include "../models/User.h"
 #include <vector>
+#include <optional>
 
 class UserRepository {
 public:
-    void save(const User& user);
+    int save(const User& user);
     std::vector<User> getAll();
-    int generateId();
 
-    User* findByUsername(const std::string& username);
+    std::optional<User> findByUsername(const std::string& username);
 };

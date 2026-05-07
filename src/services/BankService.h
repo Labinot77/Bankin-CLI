@@ -7,7 +7,7 @@ class BankService {
 private:
     AccountRepository repo;
     TransactionRepository txRepo;
-    AuditLogRepository auditRepo;
+    // AuditLogRepository auditRepo;
     
 public:
     void createAccount(int userId, const std::string& name, double initialDeposit);    
@@ -21,7 +21,8 @@ public:
     void showAllAccounts();
     std::vector<Account> getAccountsByUser(int userId);
 
-    // Admin;
-    void freezeAccount(int accountId);
-    void unfreezeAccount(int accountId);
+    // // Admin;
+    // void freezeAccount(int accountId);
+    // void unfreezeAccount(int accountId);
+
 };

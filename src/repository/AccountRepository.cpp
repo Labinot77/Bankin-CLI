@@ -1,68 +1,133 @@
 #include "AccountRepository.h"
-#include <fstream>
-#include <sstream>
+#include "../db/Database.h"
+#include <sqlite3.h>
+#include <iostream>
 
 std::vector<Account> AccountRepository::getAll() {
+    sqlite3* db = Database::connect();
+
     std::vector<Account> accounts;
-    std::ifstream file("data/accounts.txt");
 
-    std::string line;
-    while (getline(file, line)) {
-        std::stringstream ss(line);
-        std::string idStr, userIdStr, name, balanceStr, frozenStr;
+    std::string sql = "SELECT id, user_id, name, balance, is_frozen FROM accounts;";
+    sqlite3_stmt* stmt;
 
-        getline(ss, idStr, ',');
-        getline(ss, userIdStr, ',');
-        getline(ss, name, ',');
-        getline(ss, balanceStr, ',');
-        getline(ss, frozenStr, ',');
+    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
 
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
         accounts.emplace_back(
-            stoi(idStr),
-            stoi(userIdStr),
-            name,
-            stod(balanceStr),
-            frozenStr == "1"
+            sqlite3_column_int(stmt, 0),
+            sqlite3_column_int(stmt, 1),
+            (const char*)sqlite3_column_text(stmt, 2),
+            sqlite3_column_double(stmt, 3),
+            sqlite3_column_int(stmt, 4)
         );
     }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 
     return accounts;
 }
 
-void AccountRepository::save(const Account& account) {
-    std::ofstream file("data/accounts.txt", std::ios::app);
+std::vector<Account> AccountRepository::getAccountsForUser(int userId) {
+    sqlite3* db = Database::connect();
 
-    file << account.getId() << ","
-         << account.getUserId() << ','
-         << account.getOwnerName() << ","
-         << account.getBalance() << "\n";
+    std::vector<Account> result;
+
+    std::string sql =
+        "SELECT id, user_id, name, balance, is_frozen "
+        "FROM accounts WHERE user_id = ?;";
+
+    sqlite3_stmt* stmt;
+
+    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    sqlite3_bind_int(stmt, 1, userId);
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        result.emplace_back(
+            sqlite3_column_int(stmt, 0),
+            sqlite3_column_int(stmt, 1),
+            (const char*)sqlite3_column_text(stmt, 2),
+            sqlite3_column_double(stmt, 3),
+            sqlite3_column_int(stmt, 4)
+        );
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    return result;
 }
 
-int AccountRepository::generateId() {
-    std::vector<Account> accounts = getAll();
-    return accounts.empty() ? 1 : accounts.back().getId() + 1;
+void AccountRepository::save(const Account& account) {
+    sqlite3* db = Database::connect();
+
+    std::string sql =
+        "INSERT INTO accounts (user_id, name, balance, is_frozen) VALUES (?, ?, ?, ?);";
+
+    sqlite3_stmt* stmt;
+
+    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+
+    sqlite3_bind_int(stmt, 1, account.getUserId());
+    sqlite3_bind_text(stmt, 2, account.getOwnerName().c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_double(stmt, 3, account.getBalance());
+    sqlite3_bind_int(stmt, 4, account.getIsFronze());
+
+    sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 }
 
 Account AccountRepository::getById(int id) {
-    std::vector<Account> accounts = getAll();
+    sqlite3* db = Database::connect();
 
-    for (auto& acc : accounts) {
-        if (acc.getId() == id) {
-            return acc;
-        }
+    std::string sql =
+        "SELECT id, user_id, name, balance, is_frozen FROM accounts WHERE id = ?;";
+
+    sqlite3_stmt* stmt;
+
+    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    sqlite3_bind_int(stmt, 1, id);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        Account acc(
+            sqlite3_column_int(stmt, 0),
+            sqlite3_column_int(stmt, 1),
+            (const char*)sqlite3_column_text(stmt, 2),
+            sqlite3_column_double(stmt, 3),
+            sqlite3_column_int(stmt, 4)
+        );
+
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return acc;
     }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 
     throw std::runtime_error("Account not found");
 }
 
-void AccountRepository::updateAll(const std::vector<Account>& accounts) {
-    std::ofstream file("data/accounts.txt"); // overwrite
+void AccountRepository::update(const Account& acc) {
+    sqlite3* db = Database::connect();
 
-    for (const auto& acc : accounts) {
-    file << acc.getId() << ","
-     << acc.getUserId() << ","
-     << acc.getOwnerName() << ","
-     << acc.getBalance() << ","
-     << acc.getIsFronze() << "\n";
-    }
+    std::string sql =
+        "UPDATE accounts SET name=?, balance=?, is_frozen=? WHERE id=?;";
+
+    sqlite3_stmt* stmt;
+
+    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+
+    sqlite3_bind_text(stmt, 1, acc.getOwnerName().c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_double(stmt, 2, acc.getBalance());
+    sqlite3_bind_int(stmt, 3, acc.getIsFronze());
+    sqlite3_bind_int(stmt, 4, acc.getId());
+
+    sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 }

@@ -2,17 +2,17 @@
 #include "../services/BankService.h"
 #include "../services/AuthService.h"
 #include <iostream>
+#include <optional>
 
 void Menu::show()
 {
 
-    User* currentUser = nullptr;
+    std::optional<User> currentUser = std::nullopt;
 
     int choice;
 
     while (true)
     {
-        // 🔐 NOT LOGGED IN MENU
         if (!currentUser)
         {
             std::cout << "\n--- MAIN MENU ---\n";
@@ -32,7 +32,12 @@ void Menu::show()
                 std::cout << "Password: ";
                 std::cin >> password;
 
-                authService.registerUser(username, password);
+               User user = authService.registerUser(username, password);
+
+                if (user.getId() != -1) {
+                    std::cout << "Welcome, " << user.getUsername() << "!\n";
+                }
+
             }
             else if (choice == 2)
             {
@@ -182,7 +187,7 @@ case 2:
             }
 
             case 7:
-                currentUser = nullptr;
+                currentUser = std::nullopt;
                 std::cout << "Logged out.\n";
                 break;
 

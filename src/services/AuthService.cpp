@@ -1,26 +1,32 @@
 #include "AuthService.h"
 #include <iostream>
 
-User* AuthService::login(const std::string& username, const std::string& password) {
-    User* user = repo.findByUsername(username);
+std::optional<User> AuthService::login(
+    const std::string& username,
+    const std::string& password)
+{
+    auto user = repo.findByUsername(username);
 
-    if (!user || user->getPassword() != password) {
-        return nullptr;
+    if (!user || user->getPassword() != password)
+    {
+        return std::nullopt;
     }
 
     return user;
 }
-
-void AuthService::registerUser(const std::string& username, const std::string& password) {
-    if (repo.findByUsername(username)) {
+User AuthService::registerUser(const std::string& username, const std::string& password)
+{
+    if (repo.findByUsername(username))
+    {
         std::cout << "User already exists.\n";
-        return;
+        return User(-1, "", "");
     }
 
-    int id = repo.generateId();
-    User user(id, username, password);
+    User user(0, username, password);
 
-    repo.save(user);
+    int newId = repo.save(user);
 
     std::cout << "User registered successfully.\n";
+
+    return User(newId, username, password);
 }

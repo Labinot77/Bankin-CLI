@@ -12,7 +12,6 @@ private:
 public:
     Transaction(int id, int accountId, std::string type, double amount, std::string timestamp);
 
-    // getters
     int getId() const;
     int getAccountId() const;
     std::string getType() const;

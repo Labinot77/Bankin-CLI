@@ -5,9 +5,9 @@
 class AccountRepository {
 public:
     std::vector<Account> getAll();
+    std::vector<Account> getAccountsForUser(int userId);
     void save(const Account& account);
-    int generateId();
 
     Account getById(int id);
-    void updateAll(const std::vector<Account>& accounts);
+    void update(const Account& acc);
 };

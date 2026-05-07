@@ -1,4 +1,5 @@
 #include "Transaction.h"
+#include <string>
 
 Transaction::Transaction(int id, int accountId, std::string type, double amount, std::string timestamp) {
     this->id = id;

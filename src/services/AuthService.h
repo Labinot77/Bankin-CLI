@@ -6,6 +6,9 @@ private:
     UserRepository repo;
 
 public:
-    User* login(const std::string& username, const std::string& password);
-    void registerUser(const std::string& username, const std::string& password);
+    std::optional<User> login(
+    const std::string& username,
+    const std::string& password
+);
+    User registerUser(const std::string& username, const std::string& password);
 };

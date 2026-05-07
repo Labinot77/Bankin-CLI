@@ -1,50 +1,60 @@
 #include "UserRepository.h"
 #include <fstream>
 #include <sstream>
+#include <sqlite3.h>
+#include "../db/Database.h"
 
-void UserRepository::save(const User& user) {
-    std::ofstream file("data/users.txt", std::ios::app);
+int UserRepository::save(const User& user) {
+    sqlite3* db = Database::connect();
 
-    file << user.getId() << ","
-         << user.getUsername() << ","
-         << user.getPassword() << "\n";
+    std::string sql = "INSERT INTO users (username, password) VALUES (?, ?);";
+
+    sqlite3_stmt* stmt;
+    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+
+    sqlite3_bind_text(stmt, 1, user.getUsername().c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, user.getPassword().c_str(), -1, SQLITE_STATIC);
+
+    sqlite3_step(stmt);
+    
+    sqlite3_finalize(stmt);
+
+    int userId = sqlite3_last_insert_rowid(db);
+    return userId; 
+    
+    sqlite3_close(db);
+
 }
 
-std::vector<User> UserRepository::getAll() {
-    std::vector<User> users;
-    std::ifstream file("data/users.txt");
+std::optional<User> UserRepository::findByUsername(const std::string& username)
+{
+    sqlite3* db = Database::connect();
 
-    std::string line;
-    while (getline(file, line)) {
-        std::stringstream ss(line);
+    std::string sql =
+        "SELECT id, username, password FROM users WHERE username = ?;";
 
-        std::string idStr, username, password;
+    sqlite3_stmt* stmt;
 
-        getline(ss, idStr, ',');
-        getline(ss, username, ',');
-        getline(ss, password, ',');
+    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
 
-        users.emplace_back(stoi(idStr), username, password);
+    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        User user(
+            sqlite3_column_int(stmt, 0),
+            (const char*)sqlite3_column_text(stmt, 1),
+            (const char*)sqlite3_column_text(stmt, 2)
+        );
+
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+
+        return user;
     }
 
-    return users;
-}
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 
-int UserRepository::generateId() {
-    auto users = getAll();
-    return users.empty() ? 1 : users.back().getId() + 1;
-}
-
-User* UserRepository::findByUsername(const std::string& username) {
-    static User found(0, "", "");
-
-    auto users = getAll();
-    for (auto& user : users) {
-        if (user.getUsername() == username) {
-            found = user;
-            return &found;
-        }
-    }
-
-    return nullptr;
+    return std::nullopt;
 }
