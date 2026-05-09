@@ -32,12 +32,12 @@ void Menu::show()
                 std::cout << "Password: ";
                 std::cin >> password;
 
-               User user = authService.registerUser(username, password);
+                User user = authService.registerUser(username, password);
 
-                if (user.getId() != -1) {
+                if (user.getId() != -1)
+                {
                     std::cout << "Welcome, " << user.getUsername() << "!\n";
                 }
-
             }
             else if (choice == 2)
             {
@@ -101,56 +101,31 @@ void Menu::show()
                 break;
             }
 
-case 2:
-{
-    auto accounts = bankService.getAccountsByUser(currentUser->getId());
+            case 2:
+            {
+                int selectedId = selectUserAccount(currentUser->getId());
 
-    if (accounts.empty()) {
-        std::cout << "No accounts found.\n";
-        break;
-    }
+                if (selectedId == -1)
+                    break;
 
-    std::cout << "\n--- Your Accounts ---\n";
+                double amount = askAmount();
 
-    for (size_t i = 0; i < accounts.size(); i++) {
-        std::cout << i + 1 << ". "
-                  << accounts[i].getOwnerName()
-                  << " | Balance: " << accounts[i].getBalance()
-                  << "\n";
-    }
+                bankService.deposit(selectedId, amount);
 
-    int choice;
-    std::cout << "Choose account: ";
-    std::cin >> choice;
-
-    if (choice < 1 || choice > accounts.size()) {
-        std::cout << "Invalid choice.\n";
-        break;
-    }
-
-    int selectedId = accounts[choice - 1].getId();
-
-    double amount;
-    std::cout << "Amount: ";
-    std::cin >> amount;
-
-    bankService.deposit(selectedId, amount);
-
-    break;
-}
+                break;
+            }
 
             case 3:
             {
-                int id;
-                double amount;
+                int selectedId = selectUserAccount(currentUser->getId());
 
-                std::cout << "Account ID: ";
-                std::cin >> id;
+                if (selectedId == -1)
+                    break;
 
-                std::cout << "Amount: ";
-                std::cin >> amount;
+                double amount = askAmount();
 
-                bankService.withdraw(id, amount);
+                bankService.withdraw(selectedId, amount);
+
                 break;
             }
 
@@ -173,7 +148,7 @@ case 2:
             }
 
             case 5:
-                // bankService.showAccountsByUser(currentUser->getId());
+                bankService.showUserAccounts(currentUser->getId());
                 break;
 
             case 6:
@@ -196,4 +171,40 @@ case 2:
             }
         }
     }
+}
+
+int Menu::selectUserAccount(int userId)
+{
+    auto accs = bankService.getAccountsByUser(userId);
+
+    if (accs.empty())
+    {
+        std::cout << "No accounts for this user";
+        return -1;
+    }
+
+    bankService.printAccounts(accs);
+
+    int choice;
+
+    std::cout << "Choose account: ";
+    std::cin >> choice;
+
+    if (choice < 1 || choice > accs.size())
+    {
+        std::cout << "Invalid choice.\n";
+        return -1;
+    }
+
+    return accs[choice - 1].getId();
+}
+
+double Menu::askAmount()
+{
+    double amount;
+
+    std::cout << "Amount: ";
+    std::cin >> amount;
+
+    return amount;
 }

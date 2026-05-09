@@ -2,6 +2,7 @@
 #include "../db/Database.h"
 #include <sqlite3.h>
 #include <iostream>
+#include <optional>
 
 std::vector<Account> AccountRepository::getAll() {
     sqlite3* db = Database::connect();
@@ -59,6 +60,7 @@ std::vector<Account> AccountRepository::getAccountsForUser(int userId) {
     return result;
 }
 
+// Only created new accounts, doesnt update
 void AccountRepository::save(const Account& account) {
     sqlite3* db = Database::connect();
 
@@ -80,18 +82,52 @@ void AccountRepository::save(const Account& account) {
     sqlite3_close(db);
 }
 
-Account AccountRepository::getById(int id) {
+// Updates existing accounts
+void AccountRepository::update(const Account& account)
+{
     sqlite3* db = Database::connect();
 
     std::string sql =
-        "SELECT id, user_id, name, balance, is_frozen FROM accounts WHERE id = ?;";
+        "UPDATE accounts "
+        "SET balance = ?, is_frozen = ? "
+        "WHERE id = ?;";
 
     sqlite3_stmt* stmt;
 
     sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+
+    sqlite3_bind_double(stmt, 1, account.getBalance());
+    sqlite3_bind_int(stmt, 2, account.getIsFronze());
+    sqlite3_bind_int(stmt, 3, account.getId());
+
+    if (sqlite3_step(stmt) != SQLITE_DONE)
+    {
+        std::cout << "Update failed: "
+                  << sqlite3_errmsg(db)
+                  << "\n";
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+}
+
+// Gets users bank account by ID
+std::optional<Account> AccountRepository::getById(int id)
+{
+    sqlite3* db = Database::connect();
+
+    std::string sql =
+        "SELECT id, user_id, name, balance, is_frozen "
+        "FROM accounts WHERE id = ?;";
+
+    sqlite3_stmt* stmt;
+
+    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+
     sqlite3_bind_int(stmt, 1, id);
 
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
+    if (sqlite3_step(stmt) == SQLITE_ROW)
+    {
         Account acc(
             sqlite3_column_int(stmt, 0),
             sqlite3_column_int(stmt, 1),
@@ -102,32 +138,12 @@ Account AccountRepository::getById(int id) {
 
         sqlite3_finalize(stmt);
         sqlite3_close(db);
+
         return acc;
     }
 
     sqlite3_finalize(stmt);
     sqlite3_close(db);
 
-    throw std::runtime_error("Account not found");
-}
-
-void AccountRepository::update(const Account& acc) {
-    sqlite3* db = Database::connect();
-
-    std::string sql =
-        "UPDATE accounts SET name=?, balance=?, is_frozen=? WHERE id=?;";
-
-    sqlite3_stmt* stmt;
-
-    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
-
-    sqlite3_bind_text(stmt, 1, acc.getOwnerName().c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_double(stmt, 2, acc.getBalance());
-    sqlite3_bind_int(stmt, 3, acc.getIsFronze());
-    sqlite3_bind_int(stmt, 4, acc.getId());
-
-    sqlite3_step(stmt);
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
+    return std::nullopt;
 }

@@ -61,14 +61,22 @@ void BankService::deposit(int accountId, double amount)
         return;
     }
 
-    Account acc = repo.getById(accountId);
+    auto acc = repo.getById(accountId);
 
-    if (acc.getIsFronze()) {
-        std::cout << "Account is fronze." << std::endl;
-        return;
-    };
+    if (!acc) {
+           std::cout << "Bank account doesn't exist. \n";
+        return; 
+    }
+    // if (acc.getIsFronze()) {
+    //     std::cout << "Account is fronze." << std::endl;
+    //     return;
+    // };
 
-    acc.deposit(amount);
+    Account updatedAcc = *acc;
+
+    updatedAcc.deposit(amount);
+    repo.update(updatedAcc);
+
 
     std::string time = getCurrentTimestamp();
     Transaction Txin(0, accountId, "DEPOSIT", amount, time);
@@ -88,16 +96,24 @@ void BankService::withdraw(int accountId, double amount)
         return;
     }
 
-        Account acc = repo.getById(accountId);
+        auto acc = repo.getById(accountId);
 
-        if (!acc.withdraw(amount)) {
+        if (!acc) {
+            std::cout << "Bank account doesn't exist. \n";
+            return; 
+        }
+
+        Account updatedAcc = *acc;
+
+        if (!updatedAcc.withdraw(amount)) {
              std::cout << "Withdraw failed.\n";
             return;
         };
 
-        acc.withdraw(amount);
+        updatedAcc.withdraw(amount);
+        repo.update(updatedAcc);
 
-        std::cout << "Deposit successful!";
+        std::cout << "Withraw successful!";
         return;
         
     } catch (std::exception& e) {
@@ -113,30 +129,36 @@ void BankService::transfer(int fromId, int toId, double amount)
         return;
     }
 
-    if (fromId == toId)
-    {
+    try {
+    auto fromAcc = repo.getById(fromId);
+    auto toAcc = repo.getById(toId);
+    
+    if (!fromAcc || !toAcc) {
+        std::cout << "One of the accounts doesn't exist. \n";
+        return;
+    };
+
+    Account updatedFromAcc = *fromAcc;
+    Account updatedToAcc = *toAcc;
+
+    if (updatedFromAcc.getId() == updatedToAcc.getId()) {
         std::cout << "Cannot transfer to the same account.\n";
         return;
     }
 
-    try {
-    Account fromAcc = repo.getById(fromId);
-    Account toAcc = repo.getById(toId);
+    // if (fromAcc.getIsFronze() || toAcc.getIsFronze())
+    // {
+    //     std::cout << "One of the accounts is frozen. \n";
+    //     return;
+    // }
 
-
-    if (fromAcc.getIsFronze() || toAcc.getIsFronze())
-    {
-        std::cout << "One of the accounts is frozen. \n";
-        return;
-    }
-
-    if (!fromAcc.withdraw(amount))
+    if (!updatedFromAcc.withdraw(amount))
     {
         std::cout << "Insufficient funds.\n";
         return;
     }
 
-    toAcc.deposit(amount);
+    updatedToAcc.deposit(amount);
 
     std::string time = getCurrentTimestamp();
     Transaction outTx(0, fromId, "TRANSFER_OUT", amount, time);
@@ -144,6 +166,10 @@ void BankService::transfer(int fromId, int toId, double amount)
 
     Transaction inTx(0, toId, "TRANSFER_IN", amount, time);
     txRepo.save(inTx);
+
+
+    repo.update(updatedFromAcc);
+    repo.update(updatedToAcc);
 
     std::cout << "Transfer successful!\n";
     } catch (const std::exception& e) {
@@ -166,25 +192,17 @@ void BankService::showTransactions(int accountId)
 
 // Debug
 
-void BankService::showAllAccounts()
-{
-    auto accounts = repo.getAll();
 
-    if (accounts.empty())
-    {
-        std::cout << "No accounts found.\n";
+void BankService::showUserAccounts(int userId) {
+    auto accs = getAccountsByUser(userId);
+
+      if (accs.empty()) {
+        std::cout << "No accounts for this user";
         return;
-    }
+        };
 
-    std::cout << "All accounts.\n";
-
-    for (const auto &acc : accounts)
-    {
-        std::cout << "ID: " << acc.getId()
-                  << " | Owner: " << acc.getOwnerName() << "\n"
-                  << " | Balance: " << acc.getBalance() << "\n"
-                  << " | Frozen: " << (acc.getIsFronze() ? "True" : "False");
-    }
+        std::cout << "You have: " << accs.size() - 1 << std::endl;
+        printAccounts(accs);
 }
 
 // Admin
@@ -250,3 +268,17 @@ void BankService::showAllAccounts()
 
 //     std::cout << "Account not found.\n";
 // }
+
+// Helpers
+
+void BankService::printAccounts(const std::vector<Account>& accs)
+{
+    for (size_t i = 0; i < accs.size(); i++)
+    {
+        std::cout << i + 1 << ". "
+                  << accs[i].getOwnerName()
+                  << " | Balance: "
+                  << accs[i].getBalance()
+                  << "\n";
+    }
+}

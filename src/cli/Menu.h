@@ -11,4 +11,7 @@ private:
 
 public:
     void show();
+
+    int selectUserAccount(int userId);
+    double askAmount();
 };

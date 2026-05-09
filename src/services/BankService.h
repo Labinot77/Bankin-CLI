@@ -17,9 +17,13 @@ public:
 
     void showTransactions(int accountId);
 
+    // void showAccountsByUser(int userId);
+
     // Debug
-    void showAllAccounts();
+    void showUserAccounts(int userId);
     std::vector<Account> getAccountsByUser(int userId);
+
+    void printAccounts(const std::vector<Account>& accs);
 
     // // Admin;
     // void freezeAccount(int accountId);
