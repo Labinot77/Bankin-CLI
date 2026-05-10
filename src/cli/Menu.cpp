@@ -131,17 +131,20 @@ void Menu::show()
 
             case 4:
             {
-                int fromId, toId;
-                double amount;
+                std::cout << "\n--- Select Sender Account ---\n";
 
-                std::cout << "From Account ID: ";
-                std::cin >> fromId;
+                int fromId = selectUserAccount(currentUser->getId());
 
-                std::cout << "To Account ID: ";
+                if (fromId == -1) {
+                    break;
+                }
+
+                int toId;
+
+                std::cout << "Receiver Account ID: ";
                 std::cin >> toId;
 
-                std::cout << "Amount: ";
-                std::cin >> amount;
+                double amount = askAmount();
 
                 bankService.transfer(fromId, toId, amount);
                 break;
@@ -153,11 +156,9 @@ void Menu::show()
 
             case 6:
             {
-                int id;
-                std::cout << "Account ID: ";
-                std::cin >> id;
+                int selectedId = selectUserAccount(currentUser->getId());
 
-                bankService.showTransactions(id);
+                bankService.showTransactions(selectedId);
                 break;
             }
 
